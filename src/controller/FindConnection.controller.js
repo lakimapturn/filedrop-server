@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { Server } = require("socket.io");
+const io = require("../middleware/Socket.middleware");
 
 const {
   findNearbyUsers,
@@ -11,14 +11,9 @@ const {
 
 const User = require("../model/User");
 
-const io = new Server({
-  cors: {
-    origin: "http://localhost:5173",
-  },
-});
-
 io.on("connection", (socket) => {
   socket.on("enter-name", ({ name, location }) => {
+    console.log("hello");
     const user = new User(socket.id, name, location);
     addUser(user);
   });
@@ -34,7 +29,5 @@ io.on("connection", (socket) => {
   });
   // socket._onclose();
 });
-
-io.listen(4000);
 
 module.exports = router;
