@@ -1,24 +1,14 @@
+const connections = require("./connections");
+
 const radius = 0.2;
 
 const users = {};
 
-const findNearbyUsers = (user) => {
+const findNearbyUsers = (user, callback) => {
   const usersWithinRadius = [];
 
-  // const usersWithinRadius = users.filter((u) => {
-  //   if (user.id !== u.id) {
-  //     const distance = calculateDistance(
-  //       user.location.lat,
-  //       user.location.lon,
-  //       u.lat,
-  //       u.lon
-  //     );
-  //     return distance <= radius;
-  //   }
-  //   return false;
-  // });
   for (let userId in users) {
-    if (userId === user.id) {
+    if (user === undefined || userId === user.id) {
       continue;
     }
     const distance = calculateDistance(
@@ -28,6 +18,7 @@ const findNearbyUsers = (user) => {
       users[userId].location.long
     );
     if (Math.abs(distance) <= radius) {
+      callback(users[userId]);
       usersWithinRadius.push(users[userId]);
     }
   }
@@ -39,8 +30,14 @@ const addUser = (user) => {
   users[user.id] = user;
 };
 
-const removeUser = (user) => {
-  delete users[user.id];
+const removeUser = (socket) => {
+  const user = users[socket.id];
+  delete connections[socket.id];
+  delete users[socket.id];
+  emitFindNearbyUsersSuccess(
+    socket,
+    findNearbyUsers(user, () => {})
+  );
 };
 
 const getUser = (id) => {
@@ -68,4 +65,16 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
   return distance;
 }
 
-module.exports = { findNearbyUsers, addUser, removeUser, getUser };
+const emitFindNearbyUsersSuccess = (socket, nearbyUsers) => {
+  socket.emit("start-application-success", {
+    nearbyUsers: nearbyUsers,
+  });
+};
+
+module.exports = {
+  findNearbyUsers,
+  addUser,
+  removeUser,
+  getUser,
+  emitFindNearbyUsersSuccess,
+};
